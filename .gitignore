@@ -10,3 +10,5 @@ out
 .gradle
 generated-sources
 artifacts
+*.log
+*.lck
