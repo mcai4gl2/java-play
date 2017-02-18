@@ -21,7 +21,7 @@ public class EmailValidation3 {
     };
 
     static Function<String, Result2<String>> emailChecker2 = s -> match(
-            case_(() -> success(s)),
+            case_(() -> Result2.<String>success(s)),
             case_(() -> s == null, () -> failure("email must not be null")),
             case_(() -> s.length() == 0, () -> failure("email must not be empty")),
             case_(() -> !emailPattern.matcher(s).matches(), () -> failure("email " + s + " must not be empty"))
