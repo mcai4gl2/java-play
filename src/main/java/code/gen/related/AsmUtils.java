@@ -1,8 +1,15 @@
 package code.gen.related;
 
+import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Type;
+import org.objectweb.asm.util.TraceClassVisitor;
 
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.PrintWriter;
+import java.net.URL;
 import java.util.Optional;
 
 import static org.objectweb.asm.Opcodes.*;
@@ -60,11 +67,38 @@ public class AsmUtils {
         return className.replace('.', '/');
     }
 
+    private static class AsmClassLoader extends ClassLoader {
+        private byte[] bytes;
+
+        public Class<?> defineClass(final String name, final byte[] bytes) {
+            this.bytes = bytes;
+            return defineClass(name, bytes, 0, bytes.length);
+        }
+
+        @Override
+        public InputStream getResourceAsStream(String name) {
+            return new ByteArrayInputStream(bytes);
+        }
+    }
+
     public static Class<?> createClass(final String fullClassName, final byte[] bytes) {
-        return new ClassLoader() {
-            public Class<?> defineClass(final String name, final byte[] bytes) {
-                return defineClass(name, bytes, 0, bytes.length);
-            }
-        }.defineClass(fullClassName, bytes);
+        return new AsmClassLoader().defineClass(fullClassName, bytes);
+    }
+
+    public static final void PrintGeneratedClass(final Class<?> clazz, final OutputStream outputStream) throws Exception {
+        assert clazz.getClassLoader() instanceof AsmClassLoader;
+        final ClassReader classReader = new ClassReader(clazz.getClassLoader().getResourceAsStream(clazz.getCanonicalName()));
+        PrintClass(classReader, outputStream);
+    }
+
+    public static final void PrintSystemClass(final Class<?> clazz, final OutputStream outputStream) throws Exception {
+        final ClassReader classReader = new ClassReader(clazz.getCanonicalName());
+        PrintClass(classReader, outputStream);
+    }
+
+    private static final void PrintClass(final ClassReader classReader, final OutputStream outputStream) {
+        final PrintWriter printWriter = new PrintWriter(outputStream);
+        final TraceClassVisitor traceClassVisitor = new TraceClassVisitor(printWriter);
+        classReader.accept(traceClassVisitor, ClassReader.SKIP_DEBUG);
     }
 }

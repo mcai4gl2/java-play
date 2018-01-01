@@ -5,6 +5,8 @@ import org.junit.Test;
 import java.io.Serializable;
 import java.lang.reflect.Field;
 
+import static code.gen.related.AsmUtils.PrintGeneratedClass;
+import static code.gen.related.AsmUtils.PrintSystemClass;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -13,7 +15,7 @@ public class AsmPojoGeneratorTest {
 
     @Test
     public void canGenerateClassWithSerialVersionUID() throws Exception {
-        Class clazz = AsmPojoGenerator.defineClass("TestClass", null, null);
+        Class clazz = AsmPojoGenerator.defineClass("TestClass", "code.gen.related", null);
         Field field = clazz.getField("serialVersionUID");
         assertNotNull(field);
         assertEquals("serialVersionUID", field.getName());
@@ -21,4 +23,14 @@ public class AsmPojoGeneratorTest {
         assertTrue(Serializable.class.isAssignableFrom(clazz));
     }
 
+    @Test
+    public void canPrintSystemClass() throws Exception {
+        PrintSystemClass(Object.class, System.out);
+    }
+
+    @Test
+    public void canPrintGeneratedClass() throws Exception {
+        Class clazz = AsmPojoGenerator.defineClass("TestClass", null, null);
+        PrintGeneratedClass(clazz, System.out);
+    }
 }
