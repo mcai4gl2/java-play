@@ -1,49 +1,49 @@
 package code.gen.related;
 
+import jdk.internal.org.objectweb.asm.Type;
 import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.FieldVisitor;
-import org.objectweb.asm.Opcodes;
 
+import java.io.Serializable;
 import java.util.Map;
 
-import static org.objectweb.asm.Opcodes.ACC_PUBLIC;
+import static code.gen.related.AsmUtils.NO_GENERIC_SIGNATURE;
+import static code.gen.related.AsmUtils.createClass;
+import static code.gen.related.AsmUtils.slashSeparated;
+import static org.objectweb.asm.Opcodes.*;
 
 public class AsmPojoGenerator {
 
-    public static Class defineClass(String className, String packageName, Map<String, Class> properties) {
+    public static Class<?> defineClass(final String className, final String packageName, final Map<String, Class> properties) {
         final String fullname;
         if (packageName == null && "".equals(packageName))
-            fullname = String.join("/", packageName.replace('.', '/'), className);
+            fullname = String.join("/", slashSeparated(packageName), className);
         else
             fullname = className;
 
-        Class<?> clazz = new ClassLoader(AsmPojoGenerator.class.getClassLoader()) {
-            public Class<?> defineClass() {
-                ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_MAXS);
+        ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_MAXS);
 
-                // Creating class annotation
-                {
-                    AnnotationVisitor visitor = writer.visitAnnotation("Lcode/gen/related/Generated;", true);
-                    visitor.visitEnd();
-                }
-                writer.visit(Opcodes.V1_8, ACC_PUBLIC, fullname, null, "java/lang/Object", new String[] {"java/io/Serializable"});
+        // Creating class annotation
+        {
+            AnnotationVisitor visitor = writer.visitAnnotation(Type.getInternalName(Generated.class), true);
+            visitor.visitEnd();
+        }
+        writer.visit(V1_8, ACC_PUBLIC, fullname, NO_GENERIC_SIGNATURE, Type.getInternalName(Object.class),
+                new String[] {Type.getInternalName(Serializable.class)});
 
-                // Creating serialVersionUID
-                {
-                    FieldVisitor fieldVisitor = writer.visitField(Opcodes.ACC_PUBLIC + Opcodes.ACC_FINAL + Opcodes.ACC_STATIC,
-                            "serialVersionUID", "J", null, 1L);
-                    fieldVisitor.visitEnd();
-                }
+        // Creating serialVersionUID
+        {
+            FieldVisitor fieldVisitor = writer.visitField(ACC_PUBLIC + ACC_FINAL + ACC_STATIC,
+                    "serialVersionUID", "J", null, 1L);
+            fieldVisitor.visitEnd();
+        }
 
-                writer.visitEnd();
+        writer.visitEnd();
 
-                byte[] bytes = writer.toByteArray();
-                return defineClass(fullname.replace('/', '.'), bytes, 0, bytes.length);
-            }
-        }.defineClass();
+        byte[] bytes = writer.toByteArray();
 
-        return clazz;
+        return createClass(fullname.replace('/', '.'), bytes);
     }
 
 }
