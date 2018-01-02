@@ -1,16 +1,14 @@
 package code.gen.related;
 
-import jdk.internal.org.objectweb.asm.Type;
 import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.FieldVisitor;
+import org.objectweb.asm.Type;
 
 import java.io.Serializable;
 import java.util.Map;
 
-import static code.gen.related.AsmUtils.NO_GENERIC_SIGNATURE;
-import static code.gen.related.AsmUtils.createClass;
-import static code.gen.related.AsmUtils.slashSeparated;
+import static code.gen.related.AsmUtils.*;
 import static org.objectweb.asm.Opcodes.*;
 
 public class AsmPojoGenerator {
@@ -30,13 +28,23 @@ public class AsmPojoGenerator {
             visitor.visitEnd();
         }
         writer.visit(V1_8, ACC_PUBLIC, fullname, NO_GENERIC_SIGNATURE, Type.getInternalName(Object.class),
-                new String[] {Type.getInternalName(Serializable.class)});
+                new String[]{Type.getInternalName(Serializable.class)});
 
         // Creating serialVersionUID
         {
             FieldVisitor fieldVisitor = writer.visitField(ACC_PUBLIC + ACC_FINAL + ACC_STATIC,
-                    "serialVersionUID", "J", null, 1L);
+                    "serialVersionUID", Type.LONG_TYPE.getDescriptor(), NO_GENERIC_SIGNATURE, 1L);
             fieldVisitor.visitEnd();
+        }
+
+        if (properties != null) {
+            for (String name : properties.keySet()) {
+                final FieldVisitor fieldVisitor = writer.visitField(ACC_PRIVATE,
+                        name, Type.getDescriptor(properties.get(name)), NO_GENERIC_SIGNATURE, NO_INITIAL_VALUE);
+                fieldVisitor.visitEnd();
+
+
+            }
         }
 
         writer.visitEnd();
@@ -45,5 +53,4 @@ public class AsmPojoGenerator {
 
         return createClass(fullname.replace('/', '.'), bytes);
     }
-
 }

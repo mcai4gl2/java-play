@@ -9,7 +9,6 @@ import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintWriter;
-import java.net.URL;
 import java.util.Optional;
 
 import static org.objectweb.asm.Opcodes.*;
@@ -79,6 +78,14 @@ public class AsmUtils {
         public InputStream getResourceAsStream(String name) {
             return new ByteArrayInputStream(bytes);
         }
+    }
+
+    public static <T> T createInstance(Class<T> clazz) throws Exception {
+        return clazz.newInstance();
+    }
+
+    public static <T> T createInstance(Class<T> clazz, Class[] constructorParameterTypes, Object... parameters) throws Exception {
+        return clazz.getConstructor(constructorParameterTypes).newInstance(parameters);
     }
 
     public static Class<?> createClass(final String fullClassName, final byte[] bytes) {
