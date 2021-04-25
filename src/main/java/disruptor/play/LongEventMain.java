@@ -1,6 +1,7 @@
 package disruptor.play;
 
 import com.lmax.disruptor.RingBuffer;
+import com.lmax.disruptor.WorkHandler;
 import com.lmax.disruptor.dsl.Disruptor;
 import com.lmax.disruptor.util.DaemonThreadFactory;
 
@@ -12,7 +13,7 @@ import java.nio.ByteBuffer;
 public class LongEventMain {
 
     public static void handleEvent(LongEvent event, long sequence, boolean endOfBatch) {
-        System.out.println(event);
+        System.out.println("Received event with value: " + event.get() + " on " + Thread.currentThread().getName());
     }
 
     public static void translate(LongEvent event, long sequence, ByteBuffer buffer) {
@@ -27,7 +28,23 @@ public class LongEventMain {
         Disruptor<LongEvent> disruptor = new Disruptor<>(LongEvent::new, bufferSize, DaemonThreadFactory.INSTANCE);
 
         // Connect the handler
-        disruptor.handleEventsWith(LongEventMain::handleEvent);
+//        disruptor.handleEventsWith(LongEventMain::handleEvent);
+        // Creating two separate handlers, they will form a working pool and run in different threads
+        disruptor.handleEventsWithWorkerPool(new WorkHandler<LongEvent>() {
+
+            @Override
+            public void onEvent(LongEvent event) throws Exception {
+                System.out.println("Received event with value: " + event.get() + " on "
+                        + Thread.currentThread().getName());
+            }
+        }, new WorkHandler<LongEvent>() {
+
+            @Override
+            public void onEvent(LongEvent event) throws Exception {
+                System.out.println("Received event with value: " + event.get() + " on "
+                        + Thread.currentThread().getName());
+            }
+        });
 
         // Start the Disruptor, starts all threads running
         disruptor.start();
@@ -35,11 +52,12 @@ public class LongEventMain {
         // Get the ring buffer from the Disruptor to be used for publishing.
         RingBuffer<LongEvent> ringBuffer = disruptor.getRingBuffer();
 
+        System.out.println("Publishing on " + Thread.currentThread().getName());
         ByteBuffer bb = ByteBuffer.allocate(8);
         for (long l = 0; true; l++) {
             bb.putLong(0, l);
             ringBuffer.publishEvent(LongEventMain::translate, bb);
-            Thread.sleep(1000);
+            Thread.sleep(500);
         }
     }
 }
